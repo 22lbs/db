@@ -177,16 +177,39 @@ class DB {
 		$columns = "";
 		$values = "";
 
-		foreach ($data as $column => $value) {
-			$columns .= ($columns == "") ? "`" : "`,`";
-			$columns .= $column;
-			$values .= ($values == "") ? "'" : "','";
-			$values .= $this->escape($value);
+		if ( is_array($data[0]) ) {
+			foreach ( $data[0] as $column => $value ) {
+				$columns .= ($columns == "") ? "`" : "`,`";
+				$columns .= $column;
+			}
+			$columns .= "`";
+
+			foreach ( $data as $row ) {
+				foreach ( $row as $column => $value ) {
+					$values .= ($values == "") ? "('" : "'";
+					$values .= $this->escape($value);
+					$values .= "',";
+				}
+				$values = substr($values, 0, -1);
+				$values .= "), (";
+			}
+			$values = substr($values, 0, -3);
+
+			$sql = "INSERT INTO `" . $table . "` (" . $columns . ") VALUES " . $values;
+
+		} else {
+			foreach ($data as $column => $value) {
+				$columns .= ($columns == "") ? "`" : "`,`";
+				$columns .= $column;
+				$values .= ($values == "") ? "'" : "','";
+				$values .= $this->escape($value);
+			}
+			$columns .= "`";
+			$values .= "'";
+
+			$sql = "INSERT INTO `" . $table . "` (" . $columns . ") VALUES (" . $values . ")";
+
 		}
-		$columns .= "`";
-		$values .= "'";
-		
-		$sql = "INSERT INTO `" . $table . "` (" . $columns . ") VALUES (" . $values . ")";
 		
 		if ( $this->query($sql) ) {
 			$this->last_id = $this->mysqli->insert_id;
